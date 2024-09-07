@@ -18,6 +18,32 @@ exec > >(tee -i -a "$logfile") 2> >(tee -i -a "$logfile" >&2)
 
 echo "Running test with user $(whoami)"
 
+MAKEFILE_DIR=$(realpath "${test_dir}/finder-app")
+
+# If SKIP_BUILD is not set, run make in the MAKEFILE_DIR
+if [ -z "$SKIP_BUILD" ]; then
+    echo "Building project in ${MAKEFILE_DIR}..."
+    
+    # Change to the directory containing the Makefile
+    pushd ${MAKEFILE_DIR}
+    
+    # Clean previous builds and build the project
+    make clean
+    make
+    
+    # Capture the return code and pop back to the original directory
+    rc=$?
+    popd
+    
+    # Check if the build was successful
+    if [ $rc -ne 0 ]; then
+        echo "Build failed with return code $rc"
+        exit $rc
+    fi
+else
+    echo "Skipping build as SKIP_BUILD is set"
+fi
+
 set +e
 
 ./unit-test.sh
